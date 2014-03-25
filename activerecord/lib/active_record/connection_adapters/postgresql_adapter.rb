@@ -847,8 +847,15 @@ module ActiveRecord
 
         FEATURE_NOT_SUPPORTED = "0A000" #:nodoc:
 
+        def unprepared_visitor
+          Arel::Visitors::PostgreSQL.new self
+        end
+
         def exec_no_cache(sql, name, binds)
-          log(sql, name, binds) { @connection.async_exec(sql) }
+          type_casted_binds = binds.map { |col, val|
+            [col, type_cast(val, col)]
+          }
+          log(sql, name, binds) { @connection.async_exec(sql, type_casted_binds.map { |_, val| val }) }
         end
 
         def exec_cache(sql, name, binds)
